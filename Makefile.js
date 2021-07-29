@@ -619,7 +619,7 @@ target.gensite = function(prereleaseVersion) {
         if (test("-f", fullPath)) {
             rm("-rf", fullPath);
 
-            if (filePath.indexOf(".md") >= 0 && test("-f", htmlFullPath)) {
+            if (filePath.includes(".md") && test("-f", htmlFullPath)) {
                 rm("-rf", htmlFullPath);
             }
         }
@@ -667,7 +667,7 @@ target.gensite = function(prereleaseVersion) {
             process.stdout.write(`> Updating files (Steps 4-9): ${i}/${length} - ${filePath + " ".repeat(30)}\r`);
 
             // 5. Prepend page title and layout variables at the top of rules
-            if (path.dirname(filename).indexOf("rules") >= 0) {
+            if (path.dirname(filename).includes("rules")) {
 
                 // Find out if the rule requires a special docs portion (e.g. if it is recommended and/or fixable)
                 const rule = rules.get(ruleName);
@@ -690,11 +690,7 @@ target.gensite = function(prereleaseVersion) {
 
                 // extract the title from the file itself
                 title = text.match(/#([^#].+)\n/u);
-                if (title) {
-                    title = title[1].trim();
-                } else {
-                    title = "Documentation";
-                }
+                title = title ? title[1].trim() : "Documentation";
             }
 
             text = [
@@ -718,7 +714,7 @@ target.gensite = function(prereleaseVersion) {
             }
 
             // 8. Append first version of ESLint rule was added at.
-            if (filename.indexOf("rules/") !== -1) {
+            if (filename.includes("rules/")) {
                 if (!versions.added[baseName]) {
                     versions.added[baseName] = getFirstVersionOfFile(sourcePath);
                 }
@@ -1032,7 +1028,7 @@ function runPerformanceTest(title, targets, multiplier, cb) {
 
         results.sort((a, b) => a - b);
 
-        const median = results[~~(results.length / 2)];
+        const median = results[Math.trunc(results.length / 2)];
 
         echo("");
         if (median > max) {
@@ -1066,7 +1062,7 @@ function loadPerformance() {
     }
 
     results.sort((a, b) => a - b);
-    const median = results[~~(results.length / 2)];
+    const median = results[Math.trunc(results.length / 2)];
 
     echo("");
     echo("  Load Performance median:  %dms", median);
