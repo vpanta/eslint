@@ -6224,11 +6224,17 @@ var a = "test2";
     });
 });
 
-describe.only("FlatConfigArray", () => {
-    
-    let linter;
-    const filename = "foo.js";
+describe("Linter with FlatConfigArray", () => {
 
+    let linter;
+    const filename = "filename.js";
+
+    /**
+     * Creates a config array with some default properties.
+     * @param {FlatConfig|FlatConfig[]} value The value to base the
+     *      config array on.
+     * @returns {FlatConfigArray} The created config array.
+     */
     function createFlatConfigArray(value) {
         return new FlatConfigArray(value, { basePath: process.cwd() });
     }
@@ -6256,16 +6262,16 @@ describe.only("FlatConfigArray", () => {
         });
 
     });
-    
+
     describe("processors", () => {
         let receivedFilenames = [];
         let receivedPhysicalFilenames = [];
-        let extraConfig = {
+        const extraConfig = {
             plugins: {
                 test: {
                     rules: {
                         "report-original-text": {
-                            meta:{
+                            meta: {
 
                             },
                             create(context) {
@@ -6302,7 +6308,7 @@ describe.only("FlatConfigArray", () => {
                 assert.deepStrictEqual(preprocess.args[0], [code, filename]);
             });
 
-            it.only("should apply a preprocessor to the code, and lint each code sample separately", () => {
+            it("should apply a preprocessor to the code, and lint each code sample separately", () => {
                 const code = "foo bar baz";
                 const configs = createFlatConfigArray([
                     extraConfig,
@@ -6370,11 +6376,16 @@ describe.only("FlatConfigArray", () => {
             it("should receive text even if a SourceCode object was given.", () => {
                 const code = "foo";
                 const preprocess = sinon.spy(text => text.split(" "));
+                const configs = createFlatConfigArray([
+                    extraConfig
+                ]);
 
-                linter.verify(code, {});
+                configs.normalizeSync();
+
+                linter.verify(code, configs);
                 const sourceCode = linter.getSourceCode();
 
-                linter.verify(sourceCode, {}, { filename, preprocess });
+                linter.verify(sourceCode, configs, { filename, preprocess });
 
                 assert.strictEqual(preprocess.calledOnce, true);
                 assert.deepStrictEqual(preprocess.args[0], [code, filename]);
@@ -6383,11 +6394,16 @@ describe.only("FlatConfigArray", () => {
             it("should receive text even if a SourceCode object was given (with BOM).", () => {
                 const code = "\uFEFFfoo";
                 const preprocess = sinon.spy(text => text.split(" "));
+                const configs = createFlatConfigArray([
+                    extraConfig
+                ]);
 
-                linter.verify(code, {});
+                configs.normalizeSync();
+
+                linter.verify(code, configs);
                 const sourceCode = linter.getSourceCode();
 
-                linter.verify(sourceCode, {}, { filename, preprocess });
+                linter.verify(sourceCode, configs, { filename, preprocess });
 
                 assert.strictEqual(preprocess.calledOnce, true);
                 assert.deepStrictEqual(preprocess.args[0], [code, filename]);
@@ -6399,8 +6415,13 @@ describe.only("FlatConfigArray", () => {
                 const code = "foo bar baz";
                 const preprocess = sinon.spy(text => text.split(" "));
                 const postprocess = sinon.spy(text => [text]);
+                const configs = createFlatConfigArray([
+                    extraConfig
+                ]);
 
-                linter.verify(code, {}, { filename, postprocess, preprocess });
+                configs.normalizeSync();
+
+                linter.verify(code, configs, { filename, postprocess, preprocess });
 
                 assert.strictEqual(postprocess.calledOnce, true);
                 assert.deepStrictEqual(postprocess.args[0], [[[], [], []], filename]);
@@ -6408,10 +6429,16 @@ describe.only("FlatConfigArray", () => {
 
             it("should apply a postprocessor to the reported messages", () => {
                 const code = "foo bar baz";
+                const configs = createFlatConfigArray([
+                    extraConfig,
+                    { rules: { "test/report-original-text": "error" } }
+                ]);
+
+                configs.normalizeSync();
 
                 const problems = linter.verify(
                     code,
-                    { rules: { "report-original-text": "error" } },
+                    configs,
                     {
                         preprocess: input => input.split(" "),
 
@@ -6449,29 +6476,42 @@ describe.only("FlatConfigArray", () => {
 
             it("should use postprocessed problem ranges when applying autofixes", () => {
                 const code = "foo bar baz";
-
-                linter.defineRule("capitalize-identifiers", {
-                    meta: {
-                        fixable: "code"
-                    },
-                    create(context) {
-                        return {
-                            Identifier(node) {
-                                if (node.name !== node.name.toUpperCase()) {
-                                    context.report({
-                                        node,
-                                        message: "Capitalize this identifier",
-                                        fix: fixer => fixer.replaceText(node, node.name.toUpperCase())
-                                    });
+                const configs = createFlatConfigArray([
+                    extraConfig,
+                    {
+                        plugins: {
+                            test2: {
+                                rules: {
+                                    "capitalize-identifiers": {
+                                        meta: {
+                                            fixable: "code"
+                                        },
+                                        create(context) {
+                                            return {
+                                                Identifier(node) {
+                                                    if (node.name !== node.name.toUpperCase()) {
+                                                        context.report({
+                                                            node,
+                                                            message: "Capitalize this identifier",
+                                                            fix: fixer => fixer.replaceText(node, node.name.toUpperCase())
+                                                        });
+                                                    }
+                                                }
+                                            };
+                                        }
+                                    }
                                 }
                             }
-                        };
-                    }
-                });
+                        }
+                    },
+                    { rules: { "test2/capitalize-identifiers": "error" } }
+                ]);
+
+                configs.normalizeSync();
 
                 const fixResult = linter.verifyAndFix(
                     code,
-                    { rules: { "capitalize-identifiers": "error" } },
+                    configs,
                     {
 
                         /*
