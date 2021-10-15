@@ -6275,7 +6275,7 @@ describe.only("FlatConfigArray", () => {
                                         receivedPhysicalFilenames.push(context.getPhysicalFilename());
                                         context.report({ node: ast, message: context.getSourceCode().text });
                                     }
-                                }
+                                };
                             }
                         }
                     }
@@ -6292,8 +6292,8 @@ describe.only("FlatConfigArray", () => {
             it("should receive text and filename.", () => {
                 const code = "foo bar baz";
                 const preprocess = sinon.spy(text => text.split(" "));
-
                 const configs = createFlatConfigArray({});
+
                 configs.normalizeSync();
 
                 linter.verify(code, configs, { filename, preprocess });
@@ -6308,6 +6308,7 @@ describe.only("FlatConfigArray", () => {
                     extraConfig,
                     { rules: { "test/report-original-text": "error" } }
                 ]);
+
                 configs.normalizeSync();
 
                 const problems = linter.verify(
@@ -6329,9 +6330,16 @@ describe.only("FlatConfigArray", () => {
 
             it("should apply a preprocessor to the code even if the preprocessor returned code block objects.", () => {
                 const code = "foo bar baz";
+                const configs = createFlatConfigArray([
+                    extraConfig,
+                    { rules: { "test/report-original-text": "error" } }
+                ]);
+
+                configs.normalizeSync();
+
                 const problems = linter.verify(
                     code,
-                    { rules: { "report-original-text": "error" } },
+                    configs,
                     {
                         filename,
 
